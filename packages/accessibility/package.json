@@ -4,7 +4,7 @@
   "main": "lib/accessibility.js",
   "module": "lib/accessibility.es.js",
   "bundle": "dist/accessibility.js",
-  "description": "Accessibility Plugin for visually impared users",
+  "description": "Accessibility Plugin for visually impaired users",
   "author": "Mat Groves",
   "contributors": [
     "Matt Karl <matt@mattkarl.com>"
