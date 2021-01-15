@@ -134,7 +134,7 @@ export class TextureSystem extends System
         {
             texture = texture.castToBaseTexture();
 
-            if (texture.parentTextureArray)
+            if (!texture || texture.parentTextureArray)
             {
                 // cannot bind partial texture
                 // TODO: report a warning
