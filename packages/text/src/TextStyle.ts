@@ -4,7 +4,7 @@
 import { TEXT_GRADIENT } from './const';
 import { hex2string } from '@pixi/utils';
 
-export type TextStyleAlign = 'left'|'center'|'right';
+export type TextStyleAlign = 'left'|'center'|'right'|'justify';
 export type TextStyleFill = string|string[]|number|number[]|CanvasGradient|CanvasPattern;
 export type TextStyleFontStyle = 'normal'|'italic'|'oblique';
 export type TextStyleFontVariant = 'normal'|'small-caps';
@@ -178,7 +178,7 @@ export class TextStyle implements ITextStyle
      * @param {boolean} [style.wordWrap=false] - Indicates if word wrap should be used
      * @param {number} [style.wordWrapWidth=100] - The width at which text will wrap, it needs wordWrap to be set to true
      */
-    constructor(style: Partial<ITextStyle>)
+    constructor(style?: Partial<ITextStyle>)
     {
         this.styleID = 0;
 

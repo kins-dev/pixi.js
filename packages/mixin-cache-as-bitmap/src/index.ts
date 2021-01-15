@@ -4,7 +4,7 @@ import { Container, DisplayObject, IDestroyOptions } from '@pixi/display';
 import { IPointData, Matrix, Rectangle } from '@pixi/math';
 import { uid } from '@pixi/utils';
 import { settings } from '@pixi/settings';
-import { CanvasRenderer } from '@pixi/canvas-renderer';
+import type { CanvasRenderer } from '@pixi/canvas-renderer';
 
 const _tempMatrix = new Matrix();
 
@@ -433,7 +433,7 @@ DisplayObject.prototype._destroyCachedDisplayObject = function _destroyCachedDis
  *  have been set to that value.
  *  Used when destroying containers, see the Container.destroy method.
  */
-DisplayObject.prototype._cacheAsBitmapDestroy = function _cacheAsBitmapDestroy(options: IDestroyOptions|boolean): void
+DisplayObject.prototype._cacheAsBitmapDestroy = function _cacheAsBitmapDestroy(options?: IDestroyOptions|boolean): void
 {
     this.cacheAsBitmap = false;
     this.destroy(options);

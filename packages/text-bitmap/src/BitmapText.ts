@@ -1,16 +1,15 @@
 import { ObservablePoint, Point } from '@pixi/math';
 import { settings } from '@pixi/settings';
 import { Mesh, MeshGeometry, MeshMaterial } from '@pixi/mesh';
-import { removeItems, deprecation } from '@pixi/utils';
+import { removeItems } from '@pixi/utils';
 import { BitmapFont } from './BitmapFont';
 
-import type { Dict } from '@pixi/utils';
 import type { Rectangle } from '@pixi/math';
 import { Texture } from '@pixi/core';
 import type { IBitmapTextStyle } from './BitmapTextStyle';
 import type { TextStyleAlign } from '@pixi/text';
-import type { BitmapFontData } from './BitmapFontData';
 import { Container } from '@pixi/display';
+import type { IDestroyOptions } from '@pixi/display';
 
 interface PageMeshData {
     index: number;
@@ -28,6 +27,7 @@ interface CharRenderData {
     line: number;
     charCode: number;
     position: Point;
+    prevSpaces: number;
 }
 
 const pageMeshDataPool: PageMeshData[] = [];
@@ -80,6 +80,7 @@ export class BitmapText extends Container
     protected _activePagesMeshData: PageMeshData[];
     protected _tint = 0xFFFFFF;
     protected _roundPixels: boolean;
+    private _textureCache: Record<number, Texture>;
 
     /**
      * @param {string} text - A string that you would like the text to display.
@@ -87,7 +88,7 @@ export class BitmapText extends Container
      * @param {string} style.fontName - The installed BitmapFont name.
      * @param {number} [style.fontSize] - The size of the font in pixels, e.g. 24. If undefined,
      *.     this will default to the BitmapFont size.
-     * @param {string} [style.align='left'] - Alignment for multiline text ('left', 'center' or 'right'),
+     * @param {string} [style.align='left'] - Alignment for multiline text ('left', 'center', 'right' or 'justify'),
      *      does not affect single line text.
      * @param {number} [style.tint=0xFFFFFF] - The tint color.
      * @param {number} [style.letterSpacing=0] - The amount of spacing between letters.
@@ -96,15 +97,6 @@ export class BitmapText extends Container
     constructor(text: string, style: Partial<IBitmapTextStyle> = {})
     {
         super();
-
-        if (style.font)
-        {
-            // #if _DEBUG
-            deprecation('5.3.0', 'PIXI.BitmapText constructor style.font property is deprecated.');
-            // #endif
-
-            this._upgradeStyle(style);
-        }
 
         // Apply the defaults
         const { align, tint, maxWidth, letterSpacing, fontName, fontSize } = Object.assign(
@@ -227,6 +219,13 @@ export class BitmapText extends Container
          * @member {boolean}
          */
         this.dirty = true;
+
+        /**
+         * Cached char texture is destroyed when BitmapText is destroyed
+         * @member {Record<number, Texture>}
+         * @private
+         */
+        this._textureCache = {};
     }
 
     /**
@@ -240,6 +239,7 @@ export class BitmapText extends Container
         const pos = new Point();
         const chars: CharRenderData[] = [];
         const lineWidths = [];
+        const lineSpaces = [];
         const text = this._text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
         const textLength = text.length;
         const maxWidth = this._maxWidth * data.size / this._fontSize;
@@ -252,6 +252,7 @@ export class BitmapText extends Container
         let lastBreakWidth = 0;
         let spacesRemoved = 0;
         let maxLineHeight = 0;
+        let spaceCount = 0;
 
         for (let i = 0; i < textLength; i++)
         {
@@ -262,11 +263,13 @@ export class BitmapText extends Container
             {
                 lastBreakPos = i;
                 lastBreakWidth = lastLineWidth;
+                spaceCount++;
             }
 
             if (char === '\r' || char === '\n')
             {
                 lineWidths.push(lastLineWidth);
+                lineSpaces.push(-1);
                 maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
                 ++line;
                 ++spacesRemoved;
@@ -274,6 +277,7 @@ export class BitmapText extends Container
                 pos.x = 0;
                 pos.y += data.lineHeight;
                 prevCharCode = null;
+                spaceCount = 0;
                 continue;
             }
 
@@ -293,6 +297,7 @@ export class BitmapText extends Container
                 texture: Texture.EMPTY,
                 line: 0,
                 charCode: 0,
+                prevSpaces: 0,
                 position: new Point(),
             };
 
@@ -301,6 +306,7 @@ export class BitmapText extends Container
             charRenderData.charCode = charCode;
             charRenderData.position.x = pos.x + charData.xOffset + (this._letterSpacing / 2);
             charRenderData.position.y = pos.y + charData.yOffset;
+            charRenderData.prevSpaces = spaceCount;
 
             chars.push(charRenderData);
 
@@ -317,12 +323,14 @@ export class BitmapText extends Container
                 lastBreakPos = -1;
 
                 lineWidths.push(lastBreakWidth);
+                lineSpaces.push(chars.length > 0 ? chars[chars.length - 1].prevSpaces : 0);
                 maxLineWidth = Math.max(maxLineWidth, lastBreakWidth);
                 line++;
 
                 pos.x = 0;
                 pos.y += data.lineHeight;
                 prevCharCode = null;
+                spaceCount = 0;
             }
         }
 
@@ -337,6 +345,7 @@ export class BitmapText extends Container
 
             lineWidths.push(lastLineWidth);
             maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
+            lineSpaces.push(-1);
         }
 
         const lineAlignOffsets = [];
@@ -352,6 +361,10 @@ export class BitmapText extends Container
             else if (this._align === 'center')
             {
                 alignOffset = (maxLineWidth - lineWidths[i]) / 2;
+            }
+            else if (this._align === 'justify')
+            {
+                alignOffset = lineSpaces[i] < 0 ? 0 : (maxLineWidth - lineWidths[i]) / lineSpaces[i];
             }
 
             lineAlignOffsets.push(alignOffset);
@@ -405,8 +418,13 @@ export class BitmapText extends Container
                 pageMeshData.vertexCount = 0;
                 pageMeshData.uvsCount = 0;
                 pageMeshData.total = 0;
+
                 // TODO need to get page texture here somehow..
-                pageMeshData.mesh.texture = new Texture(texture.baseTexture);
+                const { _textureCache } = this;
+
+                _textureCache[baseTextureUid] = _textureCache[baseTextureUid] || new Texture(texture.baseTexture);
+                pageMeshData.mesh.texture = _textureCache[baseTextureUid];
+
                 pageMeshData.mesh.tint = this._tint;
 
                 newPagesMeshData.push(pageMeshData);
@@ -473,7 +491,7 @@ export class BitmapText extends Container
         for (let i = 0; i < lenChars; i++)
         {
             const char = chars[i];
-            let offset = char.position.x + lineAlignOffsets[char.line];
+            let offset = char.position.x + (lineAlignOffsets[char.line] * (this._align === 'justify' ? char.prevSpaces : 1));
 
             if (this._roundPixels)
             {
@@ -854,67 +872,20 @@ export class BitmapText extends Container
         return this._textHeight;
     }
 
-    /**
-     * For backward compatibility, convert old style.font constructor param to fontName & fontSize properties.
-     *
-     * @private
-     * @deprecated since 5.3.0
-     */
-    _upgradeStyle(style: Partial<IBitmapTextStyle>): void
+    destroy(options?: boolean | IDestroyOptions): void
     {
-        if (typeof style.font === 'string')
+        const { _textureCache } = this;
+
+        for (const id in _textureCache)
         {
-            const valueSplit = style.font.split(' ');
+            const texture = _textureCache[id];
 
-            style.fontName = valueSplit.length === 1
-                ? valueSplit[0]
-                : valueSplit.slice(1).join(' ');
-
-            if (valueSplit.length >= 2)
-            {
-                style.fontSize = parseInt(valueSplit[0], 10);
-            }
+            texture.destroy();
+            delete _textureCache[id];
         }
-        else
-        {
-            style.fontName = style.font.name;
-            style.fontSize = typeof style.font.size === 'number'
-                ? style.font.size
-                : parseInt(style.font.size, 10);
-        }
-    }
 
-    /**
-     * Register a bitmap font with data and a texture.
-     *
-     * @deprecated since 5.3.0
-     * @see PIXI.BitmapFont.install
-     * @static
-     */
-    static registerFont(data: string|XMLDocument|BitmapFontData, textures: Texture|Texture[]|Dict<Texture>): BitmapFont
-    {
-        // #if _DEBUG
-        deprecation('5.3.0', 'PIXI.BitmapText.registerFont is deprecated, use PIXI.BitmapFont.install');
-        // #endif
+        this._textureCache = null;
 
-        return BitmapFont.install(data, textures);
-    }
-
-    /**
-     * Get the list of installed fonts.
-     *
-     * @see PIXI.BitmapFont.available
-     * @deprecated since 5.3.0
-     * @static
-     * @readonly
-     * @member {Object.<string, PIXI.BitmapFont>}
-     */
-    static get fonts(): Dict<BitmapFont>
-    {
-        // #if _DEBUG
-        deprecation('5.3.0', 'PIXI.BitmapText.fonts is deprecated, use PIXI.BitmapFont.available');
-        // #endif
-
-        return BitmapFont.available;
+        super.destroy(options);
     }
 }

@@ -155,7 +155,7 @@ export interface DisplayObject extends GlobalMixins.DisplayObject, EventEmitter 
  *
  * [Container]{@link Container} already implements `calculateBounds` in a manner that includes children.
  *
- * But for a non-Container display object, the `calculateBounds` method must be overriden in order for `getBounds` and
+ * But for a non-Container display object, the `calculateBounds` method must be overridden in order for `getBounds` and
  * `getLocalBounds` to work. This method must write the bounds into `this._bounds`.
  *
  * Generally, the following technique works for most simple cases: take the list of points
@@ -648,7 +648,7 @@ export abstract class DisplayObject extends EventEmitter
      * @param {boolean} [skipUpdate=false] - Should we skip the update transform
      * @return {PIXI.Point} A point object representing the position of this object
      */
-    toLocal<P extends IPointData = Point>(position: IPointData, from: DisplayObject, point?: P, skipUpdate?: boolean): P
+    toLocal<P extends IPointData = Point>(position: IPointData, from?: DisplayObject, point?: P, skipUpdate?: boolean): P
     {
         if (from)
         {
@@ -763,7 +763,7 @@ export abstract class DisplayObject extends EventEmitter
     {
         if (this.tempDisplayObjectParent === null)
         {
-            // eslint-disable-next-line no-use-before-define
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define
             this.tempDisplayObjectParent = new TemporaryDisplayObject();
         }
 

@@ -1,5 +1,5 @@
 import { AbstractRenderer } from './AbstractRenderer';
-import { sayHello, isWebGLSupported } from '@pixi/utils';
+import { sayHello, isWebGLSupported, deprecation } from '@pixi/utils';
 import { MaskSystem } from './mask/MaskSystem';
 import { StencilSystem } from './mask/StencilSystem';
 import { ScissorSystem } from './mask/ScissorSystem';
@@ -20,11 +20,10 @@ import { Matrix } from '@pixi/math';
 import { Runner } from '@pixi/runner';
 
 import type { IRendererOptions, IRendererPlugins } from './AbstractRenderer';
+import type { IRenderableObject } from './IRenderableObject';
 import type { RenderTexture } from './renderTexture/RenderTexture';
-import type { DisplayObject } from '@pixi/display';
 import type { System } from './System';
 import type { IRenderingContext } from './IRenderingContext';
-import type { Extract } from '@pixi/extract';
 
 export interface IRendererPluginConstructor {
     new (renderer: Renderer, options?: any): IRendererPlugin;
@@ -74,7 +73,6 @@ export class Renderer extends AbstractRenderer
     public globalUniforms: UniformGroup;
     public CONTEXT_UID: number;
     public renderingToScreen: boolean;
-    public extract: Extract;
     // systems
     public mask: MaskSystem;
     public context: ContextSystem;
@@ -100,7 +98,7 @@ export class Renderer extends AbstractRenderer
      * @static
      * @private
      */
-    static create(options: IRendererOptions): AbstractRenderer
+    static create(options?: IRendererOptions): AbstractRenderer
     {
         if (isWebGLSupported())
         {
@@ -115,7 +113,9 @@ export class Renderer extends AbstractRenderer
      * @param {number} [options.width=800] - The width of the screen.
      * @param {number} [options.height=600] - The height of the screen.
      * @param {HTMLCanvasElement} [options.view] - The canvas to use as a view, optional.
-     * @param {boolean} [options.transparent=false] - If the render view is transparent.
+     * @param {boolean} [options.useContextAlpha=true] - Pass-through value for canvas' context `alpha` property.
+     *   If you want to set transparency, please use `backgroundAlpha`. This option is for cases where the
+     *   canvas needs to be opaque, possibly for performance reasons on some older devices.
      * @param {boolean} [options.autoDensity=false] - Resizes renderer view in CSS pixels to allow for
      *   resolutions other than 1.
      * @param {boolean} [options.antialias=false] - Sets antialias. If not available natively then FXAA
@@ -129,6 +129,7 @@ export class Renderer extends AbstractRenderer
      *  enable this if you need to call toDataUrl on the WebGL context.
      * @param {number} [options.backgroundColor=0x000000] - The background color of the rendered area
      *  (shown if not transparent).
+     * @param {number} [options.backgroundAlpha=1] - Value from 0 (fully transparent) to 1 (fully opaque).
      * @param {string} [options.powerPreference] - Parameter passed to WebGL context, set to "high-performance"
      *  for devices with dual graphics card.
      * @param {object} [options.context] - If WebGL context already exists, all parameters must be taken from it.
@@ -150,8 +151,6 @@ export class Renderer extends AbstractRenderer
         this.gl = null;
 
         this.CONTEXT_UID = 0;
-
-        // TODO legacy!
 
         /**
          * Internal signal instances of **runner**, these
@@ -299,9 +298,9 @@ export class Renderer extends AbstractRenderer
         else
         {
             this.context.initFromOptions({
-                alpha: !!this.transparent,
+                alpha: !!this.useContextAlpha,
                 antialias: options.antialias,
-                premultipliedAlpha: this.transparent && this.transparent !== 'notMultiplied',
+                premultipliedAlpha: this.useContextAlpha && this.useContextAlpha !== 'notMultiplied',
                 stencil: true,
                 preserveDrawingBuffer: options.preserveDrawingBuffer,
                 powerPreference: this.options.powerPreference,
@@ -382,7 +381,7 @@ export class Renderer extends AbstractRenderer
      * @param [transform] - A transform to apply to the render texture before rendering.
      * @param [skipUpdateTransform=false] - Should we skip the update transform pass?
      */
-    render(displayObject: DisplayObject, renderTexture?: RenderTexture,
+    render(displayObject: IRenderableObject, renderTexture?: RenderTexture,
         clear?: boolean, transform?: Matrix, skipUpdateTransform?: boolean): void
     {
         // can be handy to know!
@@ -495,6 +494,21 @@ export class Renderer extends AbstractRenderer
 
         // TODO nullify all the managers..
         this.gl = null;
+    }
+
+    /**
+     * Please use `plugins.extract` instead.
+     * @member {PIXI.Extract} extract
+     * @deprecated since 6.0.0
+     * @readonly
+     */
+    public get extract(): any
+    {
+        // #if _DEBUG
+        deprecation('6.0.0', 'Renderer#extract has been deprecated, please use Renderer#plugins.extract instead.');
+        // #endif
+
+        return this.plugins.extract;
     }
 
     /**

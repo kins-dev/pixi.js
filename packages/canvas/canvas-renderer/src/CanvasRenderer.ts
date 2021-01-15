@@ -37,7 +37,7 @@ type SmoothingEnabledProperties =
     'msImageSmoothingEnabled';
 
 /**
- * Renderering context for all browsers. This includes platform-specific
+ * Rendering context for all browsers. This includes platform-specific
  * properties that are not included in the spec for CanvasRenderingContext2D
  * @private
  */
@@ -79,7 +79,9 @@ export class CanvasRenderer extends AbstractRenderer
      * @param {number} [options.width=800] - the width of the screen
      * @param {number} [options.height=600] - the height of the screen
      * @param {HTMLCanvasElement} [options.view] - the canvas to use as a view, optional
-     * @param {boolean} [options.transparent=false] - If the render view is transparent, default false
+     * @param {boolean} [options.useContextAlpha=true] - Pass-through value for canvas' context `alpha` property.
+     *   If you want to set transparency, please use `backgroundAlpha`. This option is for cases where the
+     *   canvas needs to be opaque, possibly for performance reasons on some older devices.
      * @param {boolean} [options.autoDensity=false] - Resizes renderer view in CSS pixels to allow for
      *   resolutions other than 1
      * @param {boolean} [options.antialias=false] - sets antialias
@@ -91,6 +93,7 @@ export class CanvasRenderer extends AbstractRenderer
      *      not before the new render pass.
      * @param {number} [options.backgroundColor=0x000000] - The background color of the rendered area
      *  (shown if not transparent).
+     * @param {number} [options.backgroundAlpha=1] - Value from 0 (fully transparent) to 1 (fully opaque).
      */
     constructor(options?: IRendererOptions)
     {
@@ -101,7 +104,7 @@ export class CanvasRenderer extends AbstractRenderer
          *
          * @member {CanvasRenderingContext2D}
          */
-        this.rootContext = this.view.getContext('2d', { alpha: this.transparent }) as
+        this.rootContext = this.view.getContext('2d', { alpha: this.useContextAlpha }) as
             CrossPlatformCanvasRenderingContext2D;
 
         /**
@@ -268,14 +271,14 @@ export class CanvasRenderer extends AbstractRenderer
         {
             if (this.renderingToScreen)
             {
-                if (this.transparent)
+                context.clearRect(0, 0, this.width, this.height);
+
+                if (this.backgroundAlpha > 0)
                 {
-                    context.clearRect(0, 0, this.width, this.height);
-                }
-                else
-                {
+                    context.globalAlpha = this.useContextAlpha ? this.backgroundAlpha : 1;
                     context.fillStyle = this._backgroundColorString;
                     context.fillRect(0, 0, this.width, this.height);
+                    context.globalAlpha = 1;
                 }
             }
             else
@@ -287,8 +290,10 @@ export class CanvasRenderer extends AbstractRenderer
 
                 if (clearColor[3] > 0)
                 {
+                    context.globalAlpha = this.useContextAlpha ? clearColor[3] : 1;
                     context.fillStyle = hex2string(rgb2hex(clearColor));
                     context.fillRect(0, 0, renderTexture.realWidth, renderTexture.realHeight);
+                    context.globalAlpha = 1;
                 }
             }
         }
@@ -359,21 +364,20 @@ export class CanvasRenderer extends AbstractRenderer
      * Clear the canvas of renderer.
      *
      * @param {string} [clearColor] - Clear the canvas with this color, except the canvas is transparent.
+     * @param {number} [alpha] - Alpha to apply to the background fill color.
      */
-    public clear(clearColor: string): void
+    public clear(clearColor: string = this._backgroundColorString, alpha: number = this.backgroundAlpha): void
     {
-        const context = this.context;
+        const { context } = this;
 
-        clearColor = clearColor || this._backgroundColorString;
+        context.clearRect(0, 0, this.width, this.height);
 
-        if (!this.transparent && clearColor)
+        if (clearColor)
         {
+            context.globalAlpha = this.useContextAlpha ? alpha : 1;
             context.fillStyle = clearColor;
             context.fillRect(0, 0, this.width, this.height);
-        }
-        else
-        {
-            context.clearRect(0, 0, this.width, this.height);
+            context.globalAlpha = 1;
         }
     }
 

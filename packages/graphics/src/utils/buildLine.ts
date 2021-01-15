@@ -3,8 +3,7 @@ import { Point, SHAPES } from '@pixi/math';
 import type { Polygon } from '@pixi/math';
 import type { GraphicsData } from '../GraphicsData';
 import type { GraphicsGeometry } from '../GraphicsGeometry';
-import { LINE_JOIN, LINE_CAP } from '../const';
-import { GRAPHICS_CURVES } from '../const';
+import { LINE_JOIN, LINE_CAP, GRAPHICS_CURVES } from '../const';
 
 /**
  * Buffers vertices to draw a square cap.
@@ -321,7 +320,7 @@ function buildNonNativeLine(graphicsData: GraphicsData, graphicsGeometry: Graphi
         perp1x *= width;
         perp1y *= width;
 
-        /* d[x|y](0|1) = the component displacment between points p(0,1|1,2) */
+        /* d[x|y](0|1) = the component displacement between points p(0,1|1,2) */
         const dx0 = x1 - x0;
         const dy0 = y0 - y1;
         const dx1 = x1 - x2;

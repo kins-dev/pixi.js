@@ -9,7 +9,7 @@ that process silky smooth for all involved.
 To report a bug, request a feature, or even ask a question, make use of the GitHub Issues
 section for [PixiJS][issues]. When submitting an issue please take the following steps:
 
-1. **Seach for existing issues.** Your question or bug may have already been answered or fixed,
+1. **Search for existing issues.** Your question or bug may have already been answered or fixed,
 be sure to search the issues first before putting in a duplicate issue.
 
 2. **Create an isolated and reproducible test case.** If you are reporting a bug, make sure you
@@ -61,9 +61,14 @@ You can test your change by using the automated tests packaged with PixiJS. You 
 by running `npm test` from the command line. If you fix a bug please add a test that will catch that
 bug if it ever happens again. This prevents regressions from sneaking in.
 
-For a speedy workflow:
-1. Run `npm start` in one terminal. This watches the source tree and compiles it incrementally.
-2. When desired, run `npm run unit-test` in another terminal. This runs tests using the compilation output from `npm start`.
+Tips for a faster workflow:
+
+- Run `npm start` in one terminal. This watches the source tree and compiles it incrementally.
+- When desired, run `npm run unit-test` in another terminal. This runs tests using the compilation output from `npm start`.
+- Run `npm run unit-test:deubg` to use headful DevTools to debug or develop tests
+- For testing specific a package, use `--package` flag, e.g., `npm run unit-test -- --package=@pixi/math`
+- The `--package` flag supports multiple packages, e.g., `npm run unit-test -- --package=@pixi/math --package=@pixi/core`
+- The `--package` flag supports debug testing as well, e.g., `npm run unit-test:debug -- --package=@pixi/math`
 
 ### Submitting Your Change
 

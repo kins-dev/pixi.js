@@ -74,7 +74,7 @@ declare global {
  *
  * The transcoder worker responds to two types of messages: "init" and "transcode". You must always send the first "init"
  * {@link IInitializeTranscoderMessage} message with the WebAssembly binary; if the transcoder is successfully initialized,
- * the web-worker will respond by sending anothor {@link ITranscodeResponse} message with `success: true`.
+ * the web-worker will respond by sending another {@link ITranscodeResponse} message with `success: true`.
  *
  * @ignore
  */
@@ -174,18 +174,18 @@ export function TranscoderWorkerWrapper(): void
 
                     const imageBuffer = new Uint8Array(byteSize);
 
-                    if (!basisFile.transcodeImage(imageBuffer, i, 0, format, false, false))
+                    if (!basisFile.transcodeImage(imageBuffer, i, j, format, false, false))
                     {
                         if (fallbackMode)
                         {
                             // We failed in fallback mode as well!
-                            console.error(`Basis failed to transcode image ${i}, level ${0}!`);
+                            console.error(`Basis failed to transcode image ${i}, level ${j}!`);
 
                             return { type: 'transcode', requestID: message.requestID, success: false };
                         }
 
                         /* eslint-disable-next-line max-len */
-                        console.warn(`Basis failed to transcode image ${i}, level ${0}! Retrying to an uncompressed texture format!`);
+                        console.warn(`Basis failed to transcode image ${i}, level ${j}! Retrying to an uncompressed texture format!`);
                         i = -1;
                         fallbackMode = true;
 

@@ -10,15 +10,14 @@ import {
     SHAPES,
 } from '@pixi/math';
 
-import { Texture, UniformGroup, State, Renderer, BatchDrawCall } from '@pixi/core';
+import { Texture, UniformGroup, State, Renderer, BatchDrawCall, Shader } from '@pixi/core';
 import { BezierUtils, QuadraticUtils, ArcUtils, Star } from './utils';
-import { hex2rgb, deprecation } from '@pixi/utils';
+import { hex2rgb } from '@pixi/utils';
 import { GraphicsGeometry } from './GraphicsGeometry';
 import { FillStyle } from './styles/FillStyle';
 import { LineStyle } from './styles/LineStyle';
 import { BLEND_MODES } from '@pixi/constants';
 import { Container } from '@pixi/display';
-import { Shader } from '@pixi/core';
 
 import type { IShape, IPointData } from '@pixi/math';
 import type { IDestroyOptions } from '@pixi/display';
@@ -334,14 +333,16 @@ export class Graphics extends Container
      * Specifies the line style used for subsequent calls to Graphics methods such as the lineTo()
      * method or the drawCircle() method.
      *
-     * @method PIXI.Graphics#lineStyle
      * @param {number} [width=0] - width of the line to draw, will update the objects stored style
      * @param {number} [color=0x0] - color of the line to draw, will update the objects stored style
      * @param {number} [alpha=1] - alpha of the line to draw, will update the objects stored style
-     * @param {number} [alignment=0.5] - alignment of the line to draw, (0 = inner, 0.5 = middle, 1 = outter)
+     * @param {number} [alignment=0.5] - alignment of the line to draw, (0 = inner, 0.5 = middle, 1 = outer).
+     *        WebGL only.
      * @param {boolean} [native=false] - If true the lines will be draw using LINES instead of TRIANGLE_STRIP
      * @return {PIXI.Graphics} This Graphics object. Good for chaining method calls
      */
+    public lineStyle(width: number, color?: number, alpha?: number, alignment?: number, native?: boolean): this;
+
     /**
      * Specifies the line style used for subsequent calls to Graphics methods such as the lineTo()
      * method or the drawCircle() method.
@@ -350,28 +351,23 @@ export class Graphics extends Container
      * @param {number} [options.width=0] - width of the line to draw, will update the objects stored style
      * @param {number} [options.color=0x0] - color of the line to draw, will update the objects stored style
      * @param {number} [options.alpha=1] - alpha of the line to draw, will update the objects stored style
-     * @param {number} [options.alignment=0.5] - alignment of the line to draw, (0 = inner, 0.5 = middle, 1 = outter)
+     * @param {number} [options.alignment=0.5] - alignment of the line to draw, (0 = inner, 0.5 = middle, 1 = outer).
+     *        WebGL only.
      * @param {boolean} [options.native=false] - If true the lines will be draw using LINES instead of TRIANGLE_STRIP
      * @param {PIXI.LINE_CAP}[options.cap=PIXI.LINE_CAP.BUTT] - line cap style
      * @param {PIXI.LINE_JOIN}[options.join=PIXI.LINE_JOIN.MITER] - line join style
      * @param {number}[options.miterLimit=10] - miter limit ratio
      * @return {PIXI.Graphics} This Graphics object. Good for chaining method calls
      */
-    public lineStyle(options: ILineStyleOptions = null): this
+    public lineStyle(options?: ILineStyleOptions): this;
+
+    public lineStyle(options: ILineStyleOptions | number = null,
+        color = 0x0, alpha = 1, alignment = 0.5, native = false): this
     {
         // Support non-object params: (width, color, alpha, alignment, native)
         if (typeof options === 'number')
         {
-            // eslint-disable-next-line
-            const args = arguments;
-
-            options = {
-                width: args[0] || 0,
-                color: args[1] || 0x0,
-                alpha: args[2] !== undefined ? args[2] : 1,
-                alignment: args[3] !== undefined ? args[3] : 0.5,
-                native: !!args[4],
-            };
+            options = { width: options, color, alpha, alignment, native } as ILineStyleOptions;
         }
 
         return this.lineTextureStyle(options);
@@ -387,7 +383,8 @@ export class Graphics extends Container
      *  Default 0xFFFFFF if texture present.
      * @param {number} [options.alpha=1] - alpha of the line to draw, will update the objects stored style
      * @param {PIXI.Matrix} [options.matrix=null] - Texture matrix to transform texture
-     * @param {number} [options.alignment=0.5] - alignment of the line to draw, (0 = inner, 0.5 = middle, 1 = outter)
+     * @param {number} [options.alignment=0.5] - alignment of the line to draw, (0 = inner, 0.5 = middle, 1 = outer).
+     *        WebGL only.
      * @param {boolean} [options.native=false] - If true the lines will be draw using LINES instead of TRIANGLE_STRIP
      * @param {PIXI.LINE_CAP}[options.cap=PIXI.LINE_CAP.BUTT] - line cap style
      * @param {PIXI.LINE_JOIN}[options.join=PIXI.LINE_JOIN.MITER] - line join style
@@ -396,23 +393,6 @@ export class Graphics extends Container
      */
     public lineTextureStyle(options: ILineStyleOptions): this
     {
-        // backward compatibility with params: (width, texture,
-        // color, alpha, matrix, alignment, native)
-        if (typeof options === 'number')
-        {
-            // #if _DEBUG
-            deprecation('v5.2.0', 'Please use object-based options for Graphics#lineTextureStyle');
-            // #endif
-
-            // eslint-disable-next-line
-            const [width, texture, color, alpha, matrix, alignment, native] = arguments as any;
-
-            options = { width, texture, color, alpha, matrix, alignment, native };
-
-            // Remove undefined keys
-            Object.keys(options).forEach((key) => (options as any)[key] === undefined && delete (options as any)[key]);
-        }
-
         // Apply defaults
         options = Object.assign({
             width: 0,
@@ -736,24 +716,8 @@ export class Graphics extends Container
      * @param {PIXI.Matrix} [options.matrix=null] - Transform matrix
      * @return {PIXI.Graphics} This Graphics object. Good for chaining method calls
      */
-    beginTextureFill(options: IFillStyleOptions): this
+    beginTextureFill(options?: IFillStyleOptions): this
     {
-        // Backward compatibility with params: (texture, color, alpha, matrix)
-        if (options instanceof Texture)
-        {
-            // #if _DEBUG
-            deprecation('v5.2.0', 'Please use object-based options for Graphics#beginTextureFill');
-            // #endif
-
-            // eslint-disable-next-line
-            const [texture, color, alpha, matrix] = arguments as any;
-
-            options = { texture, color, alpha, matrix };
-
-            // Remove undefined keys
-            Object.keys(options).forEach((key) => (options as any)[key] === undefined && delete (options as any)[key]);
-        }
-
         // Apply defaults
         options = Object.assign({
             texture: Texture.WHITE,
@@ -1227,7 +1191,7 @@ export class Graphics extends Container
     }
 
     /**
-     * Recalcuate the tint by applying tin to batches using Graphics tint.
+     * Recalculate the tint by applying tint to batches using Graphics tint.
      * @protected
      */
     protected calculateTints(): void
@@ -1260,7 +1224,7 @@ export class Graphics extends Container
 
     /**
      * If there's a transform update or a change to the shape of the
-     * geometry, recaculate the vertices.
+     * geometry, recalculate the vertices.
      * @protected
      */
     protected calculateVertices(): void
@@ -1368,7 +1332,7 @@ export class Graphics extends Container
      * @param {boolean} [options.baseTexture=false] - Only used for child Sprites if options.children is set to true
      *  Should it destroy the base texture of the child sprite
      */
-    public destroy(options: IDestroyOptions|boolean): void
+    public destroy(options?: IDestroyOptions|boolean): void
     {
         this._geometry.refCount--;
         if (this._geometry.refCount === 0)

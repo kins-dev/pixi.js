@@ -29,8 +29,8 @@ export class Matrix
 
     /**
      * @param {number} [a=1] - x scale
-     * @param {number} [b=0] - x skew
-     * @param {number} [c=0] - y skew
+     * @param {number} [b=0] - y skew
+     * @param {number} [c=0] - x skew
      * @param {number} [d=1] - y scale
      * @param {number} [tx=0] - x translation
      * @param {number} [ty=0] - y translation
@@ -484,6 +484,13 @@ export class Matrix
 
         return this;
     }
+
+    // #if _DEBUG
+    toString(): string
+    {
+        return `[@pixi/math:Matrix a=${this.a} b=${this.b} c=${this.c} d=${this.d} tx=${this.tx} ty=${this.ty}]`;
+    }
+    // #endif
 
     /**
      * A default (identity) matrix
