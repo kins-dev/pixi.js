@@ -35,7 +35,7 @@ export class ObservablePoint<T = any> implements IPoint
 
     /**
      * Creates a clone of this point.
-     * The callback and scope params can be overidden otherwise they will default
+     * The callback and scope params can be overridden otherwise they will default
      * to the clone object's values.
      *
      * @override
@@ -109,6 +109,13 @@ export class ObservablePoint<T = any> implements IPoint
     {
         return (p.x === this._x) && (p.y === this._y);
     }
+
+    // #if _DEBUG
+    toString(): string
+    {
+        return `[@pixi/math:ObservablePoint x=${0} y=${0} scope=${this.scope}]`;
+    }
+    // #endif
 
     /**
      * The position of the displayObject on the x axis relative to the local coordinates of the parent.

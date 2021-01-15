@@ -1,9 +1,9 @@
 {
   "name": "@pixi/app",
-  "version": "5.3.3",
-  "main": "lib/app.js",
-  "module": "lib/app.es.js",
-  "bundle": "dist/app.js",
+  "version": "6.0.0-rc.2",
+  "main": "dist/cjs/app.js",
+  "module": "dist/esm/app.js",
+  "bundle": "dist/browser/app.js",
   "description": "Convenience class to create a new PixiJS application",
   "author": "Mat Groves",
   "contributors": [
@@ -21,14 +21,15 @@
   },
   "files": [
     "lib",
-    "dist"
+    "dist",
+    "*.d.ts"
   ],
   "dependencies": {
-    "@pixi/core": "5.3.3",
-    "@pixi/display": "5.3.3"
+    "@pixi/core": "6.0.0-rc.2",
+    "@pixi/display": "6.0.0-rc.2"
   },
   "devDependencies": {
-    "@pixi/canvas-renderer": "5.3.3",
-    "@pixi/utils": "5.3.3"
+    "@pixi/canvas-renderer": "6.0.0-rc.2",
+    "@pixi/utils": "6.0.0-rc.2"
   }
 }

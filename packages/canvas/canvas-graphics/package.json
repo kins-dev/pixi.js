@@ -1,9 +1,9 @@
 {
   "name": "@pixi/canvas-graphics",
-  "version": "5.3.3",
-  "main": "lib/canvas-graphics.js",
-  "module": "lib/canvas-graphics.es.js",
-  "bundle": "dist/canvas-graphics.js",
+  "version": "6.0.0-rc.2",
+  "main": "dist/cjs/canvas-graphics.js",
+  "module": "dist/esm/canvas-graphics.js",
+  "bundle": "dist/browser/canvas-graphics.js",
   "description": "Canvas mixin for the graphics package",
   "author": "Mat Groves",
   "contributors": [
@@ -21,13 +21,15 @@
   },
   "files": [
     "lib",
-    "dist"
+    "dist",
+    "*.d.ts"
   ],
   "dependencies": {
-    "@pixi/canvas-renderer": "5.3.3",
-    "@pixi/constants": "5.3.3",
-    "@pixi/core": "5.3.3",
-    "@pixi/graphics": "5.3.3",
-    "@pixi/math": "5.3.3"
+    "@pixi/canvas-display": "6.0.0-rc.2",
+    "@pixi/canvas-renderer": "6.0.0-rc.2",
+    "@pixi/constants": "6.0.0-rc.2",
+    "@pixi/core": "6.0.0-rc.2",
+    "@pixi/graphics": "6.0.0-rc.2",
+    "@pixi/math": "6.0.0-rc.2"
   }
 }
